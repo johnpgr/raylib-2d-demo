@@ -18,6 +18,17 @@
                 "panel": "new"
             },
             "problemMatcher": "$gcc"
+        },
+        {
+            "label": "build-and-run",
+            "type": "shell",
+            "command": "make && make run",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$gcc",
+            "group": "build"
         }
     ]
 }
