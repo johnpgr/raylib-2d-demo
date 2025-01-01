@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -6,8 +7,17 @@
 
 #define WIDTH 1280
 #define HEIGHT 720
-#define MAX_SHAPES 30
 #define SHAPE_SPEED 2.0f
+
+#define append(arr, item)\
+    do {\
+        if (arr.size >= arr.capacity) {\
+            if(arr.capacity == 0) arr.capacity = 100;\
+            else arr.capacity *= 2;\
+            arr.items = realloc(arr.items, arr.capacity * sizeof(*arr.items));\
+        }\
+        arr.items[arr.size++] = item;\
+    } while (0)
 
 typedef enum {
     SHAPE_RECTANGLE,
@@ -21,83 +31,42 @@ typedef struct {
     float size;
     Color color;
     Vector2 velocity;
-    bool shouldDraw;
+    bool should_draw;
     ShapeKind kind;
 } Shape;
 
-Shape* initShapes() {
-    Shape* shapes = malloc(MAX_SHAPES * sizeof(Shape));
-    if (shapes == NULL) {
-        printf("Failed to allocate memory for shapes\n");
-        return NULL;
-    }
+typedef struct {
+    Shape* items;
+    size_t size;
+    size_t capacity;
+} Shapes;
 
-    for (int i = 0; i < MAX_SHAPES; ++i) {
-        shapes[i] = (Shape) {
-            .position = (Vector2){0,0},
-            .name = NULL,
-            .scale = 1.0f,
-            .size = 0.0f,
-            .color = WHITE,
-            .velocity = (Vector2){0,0},
-            .shouldDraw = false,
-            .kind = SHAPE_RECTANGLE
-        };
-    }
-
-    return shapes;
-}
-
-bool addShape(Shape* shapes, Vector2 position, char* name, float size, float scale, Color color, ShapeKind kind) {
-    if (shapes == NULL) {
-        return false;
-    }
-
-    for (int i = 0; i < MAX_SHAPES; ++i) {
-        if (!shapes[i].shouldDraw) {
-            float angle = (float) GetRandomValue(0,360) * PI / 180.0f;
-            Vector2 direction = {
-                .x = cosf(angle),
-                .y = sinf(angle),
-            };
-
-            Vector2 velocity = {
-                .x = direction.x * SHAPE_SPEED,
-                .y = direction.y * SHAPE_SPEED
-            };
-
-            shapes[i] = (Shape) {
-                .position = position,
-                .name = name,
-                .scale = scale,
-                .size = size,
-                .color = color,
-                .velocity = velocity,
-                .shouldDraw = true,
-                .kind = kind
-            };
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void removeShape(Shape* shapes, int index) {
-    if (shapes == NULL) {
-        return;
-    }
-
-    if (index >= 0 && index < MAX_SHAPES) {
-        shapes[index].shouldDraw = false;
+void print_shapes(Shapes* shapes) {
+    for (size_t i = 0; i < shapes->size; i++) {
+        const Shape s = shapes->items[i];
+        printf("Shape %s: x=%f, y=%f\n", s.name, s.position.x, s.position.y);
     }
 }
 
-void drawShapes(Shape* shapes) {
-    for (int i = 0; i < MAX_SHAPES; i++) {
-        const Shape s = shapes[i];
+Vector2 shape_random_direction_vector() {
+    float angle = (float) GetRandomValue(0,360) * PI / 180.0f;
+    Vector2 direction = {
+        .x = cosf(angle),
+        .y = sinf(angle),
+    };
+    Vector2 velocity = {
+        .x = direction.x * SHAPE_SPEED,
+        .y = direction.y * SHAPE_SPEED
+    };
 
-        if (s.shouldDraw) {
+    return velocity;
+}
+
+void draw_shapes(Shapes* shapes) {
+    for (size_t i = 0; i < shapes->size; i++) {
+        const Shape s = shapes->items[i];
+
+        if (s.should_draw) {
             switch (s.kind) {
                 case SHAPE_RECTANGLE:
                     DrawRectangle(
@@ -121,14 +90,14 @@ void drawShapes(Shape* shapes) {
     }
 }
 
-void updateShapes(Shape* shapes) { 
+void update_shapes(Shapes* shapes) { 
     const int screenW = GetScreenWidth();
     const int screenH = GetScreenHeight();
 
-    for (int i = 0; i < MAX_SHAPES; i++) {
-        Shape* s = &shapes[i];
+    for (size_t i = 0; i < shapes->size; i++) {
+        Shape* s = &shapes->items[i];
 
-        if (s->shouldDraw) {
+        if (s->should_draw) {
             // Update position
             s->position.x += s->velocity.x;
             s->position.y += s->velocity.y;
@@ -149,7 +118,7 @@ void updateShapes(Shape* shapes) {
     }
 }
 
-void drawMenu(bool* showMenu) {
+void draw_menu(bool* showMenu) {
     const int screenW = GetScreenWidth();
     if (GuiButton((Rectangle){ screenW - 150, 20, 120, 30 }, "Toggle Menu")) *showMenu = !(*showMenu);
     if (*showMenu) {
@@ -159,34 +128,50 @@ void drawMenu(bool* showMenu) {
 }
 
 int main(int argc, [[maybe_unused]] char* argv[argc + 1]) {
-    Font customFont = LoadFontEx("resources/fonts/PixAntiqua.ttf", 32, 0, 250);
+    Font customFont = LoadFont("resources/fonts/PixAntiqua.ttf");
 
-    SetTextLineSpacing(16);
     InitWindow(WIDTH, HEIGHT, "Untitled Game");
     SetTargetFPS(60);
 
-    Shape* shapes = initShapes();
-    if (shapes == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    addShape(shapes, (Vector2){ 100, 100 }, "Red Circle", 50.0f, 1.0f, RED, SHAPE_CIRCLE);
-    addShape(shapes, (Vector2){ 120, 120 }, "Green Rectangle", 50.0f, 1.2f, GREEN, SHAPE_RECTANGLE);
-
     bool showMenu = false;
+    Shapes shapes = {};
+    Shape red_circle = {
+        .position = { 100, 100 },
+        .name = "Red Circle",
+        .scale = 1.0f,
+        .size = 50.0f,
+        .color = RED,
+        .kind = SHAPE_CIRCLE,
+        .velocity = shape_random_direction_vector(),
+        .should_draw = true,
+    };
+    Shape green_rectangle = {
+        .position = { 200, 200 },
+        .name = "Green Rectangle",
+        .scale = 1.0f,
+        .size = 50.0f,
+        .color = GREEN,
+        .kind = SHAPE_RECTANGLE,
+        .velocity = shape_random_direction_vector(),
+        .should_draw = true,
+    };
+
+    append(shapes, red_circle);
+    append(shapes, green_rectangle);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
             ClearBackground(BLACK);
-            drawMenu(&showMenu);
-            updateShapes(shapes);
-            drawShapes(shapes);
+            update_shapes(&shapes);
+            draw_menu(&showMenu);
+            draw_shapes(&shapes);
+            print_shapes(&shapes);
         EndDrawing();
     }
 
     UnloadFont(customFont);
     CloseWindow();
-    free(shapes);
+    free(shapes.items);
 
     return EXIT_SUCCESS;
 }
