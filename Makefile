@@ -1,30 +1,37 @@
 CC = gcc
-CFLAGS = -std=c23 -Wall -Wextra -O2
+CFLAGS = -std=c2x -Wall -Wextra -O2
+CFLAGS_DEBUG = -std=c23 -Wall -Wextra -g
 LIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
-# Output binary name
-TARGET = game
+# Directories
+BIN_DIR = bin
+TARGET = $(BIN_DIR)/main
 
 # Source files
 SRCS = src/main.c
-OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:src/%.c=$(BIN_DIR)/%.o)
 
 # Default target
-all: $(TARGET)
+all: $(BIN_DIR) $(TARGET)
+
+# Create bin directory if it doesn't exist
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
 
 # Linking
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) $(LIBS)
 
 # Compilation
-%.o: %.c
+$(BIN_DIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean build files
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS)
+	rm -rf $(BIN_DIR)
 
-# Run the game
+# Run the Program
 run: $(TARGET)
 	./$(TARGET)
 

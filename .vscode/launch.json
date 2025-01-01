@@ -4,10 +4,11 @@
         {
             "type": "codelldb",
             "request": "launch",
-            "name": "C",
-            "preLaunchTask": "Compile",
-            "expressions": "native",
-            "program": "${workspaceFolder}/bin/${fileBasenameNoExtension}"
+            "name": "Debug Game",
+            "program": "${workspaceFolder}/bin/game",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build-debug"
         }
     ]
 }

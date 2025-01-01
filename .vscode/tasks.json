@@ -2,9 +2,22 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Compile",
+            "label": "build-debug",
             "type": "shell",
-            "command": "mkdir -p bin && gcc -g -Wall -Wextra -std=c2x -lm ${relativeFile} -o bin/${fileBasenameNoExtension}"
+            "command": "make",
+            "args": [
+                "CFLAGS=${CFLAGS_DEBUG}",
+                "all"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$gcc"
         }
     ]
 }
