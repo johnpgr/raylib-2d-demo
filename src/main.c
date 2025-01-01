@@ -1,11 +1,13 @@
-#include <math.h>
-#include <raylib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <raylib.h>
+#include <raygui.h>
 
 #define WIDTH 1280
-#define HEIGHT 960
+#define HEIGHT 720
 #define MAX_SHAPES 30
+#define SHAPE_SPEED 2.0f
 
 typedef enum {
     SHAPE_RECTANGLE,
@@ -19,7 +21,6 @@ typedef struct {
     float size;
     Color color;
     Vector2 velocity;
-    Vector2 direction;
     bool shouldDraw;
     ShapeKind kind;
 } Shape;
@@ -54,25 +55,23 @@ bool addShape(Shape* shapes, Vector2 position, char* name, float size, float sca
 
     for (int i = 0; i < MAX_SHAPES; ++i) {
         if (!shapes[i].shouldDraw) {
-            float angle = (float)GetRandomValue(0,360) * PI / 180.0f;
+            float angle = (float) GetRandomValue(0,360) * PI / 180.0f;
             Vector2 direction = {
                 .x = cosf(angle),
                 .y = sinf(angle),
             };
 
-            float speed = 2.0f;
             Vector2 velocity = {
-                .x = direction.x * speed,
-                .y = direction.y * speed
+                .x = direction.x * SHAPE_SPEED,
+                .y = direction.y * SHAPE_SPEED
             };
 
-            shapes[i] = (Shape){
+            shapes[i] = (Shape) {
                 .position = position,
                 .name = name,
                 .scale = scale,
                 .size = size,
                 .color = color,
-                .direction = direction,
                 .velocity = velocity,
                 .shouldDraw = true,
                 .kind = kind
@@ -82,6 +81,16 @@ bool addShape(Shape* shapes, Vector2 position, char* name, float size, float sca
     }
 
     return false;
+}
+
+void removeShape(Shape* shapes, int index) {
+    if (shapes == NULL) {
+        return;
+    }
+
+    if (index >= 0 && index < MAX_SHAPES) {
+        shapes[index].shouldDraw = false;
+    }
 }
 
 void drawShapes(Shape* shapes) {
@@ -140,12 +149,21 @@ void updateShapes(Shape* shapes) {
     }
 }
 
-int main(int argc, char* argv[]) {
+void drawMenu(bool* showMenu) {
+    const int screenW = GetScreenWidth();
+    if (GuiButton((Rectangle){ screenW - 150, 20, 120, 30 }, "Toggle Menu")) *showMenu = !(*showMenu);
+    if (*showMenu) {
+        int result = GuiMessageBox((Rectangle){ screenW - 280, 60, 250, 100 }, "#191#Message Box", "Hi! This is a message!", "Nice;Cool");
+        if (result >= 0) *showMenu = false;
+    }
+}
+
+int main(int argc, [[maybe_unused]] char* argv[argc + 1]) {
     Font customFont = LoadFontEx("resources/fonts/PixAntiqua.ttf", 32, 0, 250);
 
     SetTextLineSpacing(16);
     InitWindow(WIDTH, HEIGHT, "Untitled Game");
-    SetTargetFPS(165);
+    SetTargetFPS(60);
 
     Shape* shapes = initShapes();
     if (shapes == NULL) {
@@ -155,11 +173,14 @@ int main(int argc, char* argv[]) {
     addShape(shapes, (Vector2){ 100, 100 }, "Red Circle", 50.0f, 1.0f, RED, SHAPE_CIRCLE);
     addShape(shapes, (Vector2){ 120, 120 }, "Green Rectangle", 50.0f, 1.2f, GREEN, SHAPE_RECTANGLE);
 
+    bool showMenu = false;
+
     while (!WindowShouldClose()) {
         BeginDrawing();
-        ClearBackground(BLACK);
-        updateShapes(shapes);
-        drawShapes(shapes);
+            ClearBackground(BLACK);
+            drawMenu(&showMenu);
+            updateShapes(shapes);
+            drawShapes(shapes);
         EndDrawing();
     }
 
