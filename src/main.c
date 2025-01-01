@@ -117,22 +117,24 @@ void updateShapes(Shape* shapes) {
     const int screenH = GetScreenHeight();
 
     for (int i = 0; i < MAX_SHAPES; i++) {
-        if (shapes[i].shouldDraw) {
+        Shape* s = &shapes[i];
+
+        if (s->shouldDraw) {
             // Update position
-            shapes[i].position.x += shapes[i].velocity.x;
-            shapes[i].position.y += shapes[i].velocity.y;
+            s->position.x += s->velocity.x;
+            s->position.y += s->velocity.y;
 
             // Check for collision with screen borders
             // Right and left borders
-            if (shapes[i].position.x > screenW - shapes[i].size || shapes[i].position.x < 0) {
-                shapes[i].velocity.x *= -1;  // Invert x direction
-                shapes[i].position.x = fmaxf(0, fminf(shapes[i].position.x, screenW - shapes[i].size));
+            if (s->position.x > screenW - s->size || s->position.x < 0) {
+                s->velocity.x *= -1;  // Invert x direction
+                s->position.x = fmaxf(0, fminf(s->position.x, screenW - s->size));
             }
 
             // Bottom and top borders
-            if (shapes[i].position.y > screenH - shapes[i].size || shapes[i].position.y < 0) {
-                shapes[i].velocity.y *= -1;  // Invert y direction
-                shapes[i].position.y = fmaxf(0, fminf(shapes[i].position.y, screenH - shapes[i].size));
+            if (s->position.y > screenH - s->size || s->position.y < 0) {
+                s->velocity.y *= -1;  // Invert y direction
+                s->position.y = fmaxf(0, fminf(s->position.y, screenH - s->size));
             }
         }
     }
